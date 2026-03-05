@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 19% 20%;
+    --foreground: 0 0% 100%;
+
+    --card: 222 22% 15%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 222 22% 15%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 200 46% 39%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 180 55% 69%;
+    --secondary-foreground: 222 22% 15%;
+
+    --muted: 220 17% 27%;
+    --muted-foreground: 213 27% 84%;
+
+    --accent: 180 36% 61%;
+    --accent-foreground: 222 22% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 17% 27%;
+    --input: 220 17% 32%;
+    --ring: 200 46% 39%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 222 22% 12%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 200 46% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 17% 22%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 220 17% 27%;
+    --sidebar-ring: 200 46% 39%;
+
+    --font-heading: 'Tajawal', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    direction: rtl;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(200 46% 39%), hsl(180 55% 69%));
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(200 46% 39%), hsl(180 55% 69%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-shadow {
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  }
+}
