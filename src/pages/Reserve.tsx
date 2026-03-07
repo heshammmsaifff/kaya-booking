@@ -3,33 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
-import { CalendarIcon, ArrowRight, Minus, Plus, Check } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowRight, Minus, Plus, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import Swal from "sweetalert2";
 
-const timeSlots = [
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30",
-  "18:00", "18:30", "19:00", "19:30", "20:00", "20:30",
-  "21:00", "21:30", "22:00", "22:30", "23:00",
-];
-
 const tableTypes = [
-  { value: "indoor", label: "داخلي" },
-  { value: "outdoor", label: "خارجي" },
+  { value: "indoor", label: "عادية" },
+  { value: "outdoor", label: "مقفلة" },
   { value: "vip", label: "VIP" },
-  { value: "private", label: "خاص" },
 ];
 
 const tableTypeLabels: Record<string, string> = {
-  indoor: "داخلي",
-  outdoor: "خارجي",
+  indoor: "عادية",
+  outdoor: "مقفلة",
   vip: "VIP",
   private: "خاص",
 };
@@ -41,8 +34,6 @@ const Reserve = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [tableType, setTableType] = useState("");
-  const [date, setDate] = useState<Date>();
-  const [time, setTime] = useState("");
   const [loading, setLoading] = useState(false);
   const [reservationCode, setReservationCode] = useState("");
 
@@ -78,23 +69,7 @@ const Reserve = () => {
     return true;
   };
 
-  const handleStep2Next = () => {
-    if (validateStep2()) {
-      setStep(3);
-    }
-  };
-
   const handleSubmit = async () => {
-    if (!date || !time) {
-      Swal.fire({
-        icon: "error",
-        title: "خطأ",
-        text: "يرجى اختيار التاريخ والوقت",
-        confirmButtonColor: "hsl(200, 46%, 39%)",
-      });
-      return;
-    }
-
     const result = await Swal.fire({
       title: "تأكيد الحجز",
       html: `
@@ -103,8 +78,7 @@ const Reserve = () => {
           <p style="margin-bottom: 8px;"><strong>الجوال:</strong> <span dir="ltr">${phone}</span></p>
           <p style="margin-bottom: 8px;"><strong>عدد الأشخاص:</strong> ${partySize}</p>
           <p style="margin-bottom: 8px;"><strong>نوع الطاولة:</strong> ${tableTypeLabels[tableType]}</p>
-          <p style="margin-bottom: 8px;"><strong>التاريخ:</strong> ${format(date, "PPP", { locale: ar })}</p>
-          <p><strong>الوقت:</strong> ${time}</p>
+          <p style="margin-bottom: 8px;"><strong>الموعد:</strong> سيتم تحديده من قبل موظف الاستقبال</p>
         </div>
       `,
       icon: "question",
@@ -120,6 +94,9 @@ const Reserve = () => {
 
     setLoading(true);
     try {
+      const today = new Date();
+      const reservationDate = today.toISOString().slice(0, 10); // yyyy-MM-dd
+
       const { data, error } = await supabase
         .from("reservations")
         .insert({
@@ -127,8 +104,8 @@ const Reserve = () => {
           phone,
           party_size: partySize,
           table_type: tableType as any,
-          reservation_date: format(date, "yyyy-MM-dd"),
-          reservation_time: time + ":00",
+          reservation_date: reservationDate,
+          reservation_time: "00:00:00",
         })
         .select("reservation_code")
         .single();
@@ -160,7 +137,7 @@ const Reserve = () => {
       <div className="w-full max-w-md">
         {/* Header */}
         <button
-          onClick={() => step > 1 ? setStep(step - 1) : navigate("/")}
+          onClick={() => (step > 1 ? setStep(step - 1) : navigate("/"))}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8 font-heading"
         >
           <ArrowRight className="h-4 w-4" />
@@ -169,13 +146,12 @@ const Reserve = () => {
 
         {/* Progress */}
         <div className="flex gap-2 mb-8">
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <div
               key={s}
-              className={cn(
-                "h-1 flex-1 rounded-full transition-colors",
+              className={`h-1 flex-1 rounded-full transition-colors ${
                 s <= step ? "gradient-primary" : "bg-muted"
-              )}
+              }`}
             />
           ))}
         </div>
@@ -183,7 +159,9 @@ const Reserve = () => {
         {/* Step 1: Party Size */}
         {step === 1 && (
           <div className="animate-fade-in">
-            <h2 className="font-heading text-3xl font-bold mb-2">عدد الأشخاص</h2>
+            <h2 className="font-heading text-3xl font-bold mb-2">
+              عدد الأشخاص
+            </h2>
             <p className="text-muted-foreground mb-8">كم عدد الضيوف؟</p>
 
             <div className="glass rounded-2xl p-8 flex items-center justify-center gap-6">
@@ -196,7 +174,9 @@ const Reserve = () => {
                 <Minus className="h-4 w-4" />
               </Button>
               <div className="text-center">
-                <span className="text-5xl font-bold gradient-text">{partySize}</span>
+                <span className="text-5xl font-bold gradient-text">
+                  {partySize}
+                </span>
                 <p className="text-muted-foreground text-sm mt-1">
                   {partySize === 1 ? "شخص" : partySize <= 10 ? "أشخاص" : "شخص"}
                 </p>
@@ -224,7 +204,10 @@ const Reserve = () => {
         {step === 2 && (
           <div className="animate-fade-in space-y-5">
             <h2 className="font-heading text-3xl font-bold mb-2">بياناتك</h2>
-            <p className="text-muted-foreground mb-6">أدخل معلومات الحجز</p>
+            <p className="text-muted-foreground mb-6">
+              أدخل معلوماتك، وسيقوم موظف الاستقبال بتحديد الوقت والتاريخ
+              المناسبين لك.
+            </p>
 
             <div className="space-y-4">
               <div>
@@ -266,73 +249,14 @@ const Reserve = () => {
 
             <Button
               className="w-full mt-6 gradient-primary py-6 text-lg font-heading font-bold rounded-xl"
-              onClick={handleStep2Next}
+              onClick={async () => {
+                if (validateStep2()) {
+                  await handleSubmit();
+                }
+              }}
               disabled={!name || !phone || !tableType}
             >
-              التالي
-            </Button>
-          </div>
-        )}
-
-        {/* Step 3: Date & Time */}
-        {step === 3 && (
-          <div className="animate-fade-in space-y-5">
-            <h2 className="font-heading text-3xl font-bold mb-2">الموعد</h2>
-            <p className="text-muted-foreground mb-6">اختر التاريخ والوقت</p>
-
-            <div>
-              <Label className="font-heading mb-2 block">تاريخ الحجز</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-right py-5 rounded-xl bg-muted/50 border-border/50",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="ml-2 h-4 w-4" />
-                    {date ? format(date, "PPP", { locale: ar }) : "اختر التاريخ"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={date}
-                    onSelect={setDate}
-                    disabled={(d) => d < new Date()}
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            <div>
-              <Label className="font-heading mb-2 block">وقت الحجز</Label>
-              <div className="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto">
-                {timeSlots.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setTime(t)}
-                    className={cn(
-                      "py-2 px-3 rounded-lg text-sm font-medium transition-all",
-                      time === t
-                        ? "gradient-primary text-foreground shadow-lg"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <Button
-              className="w-full mt-6 gradient-primary py-6 text-lg font-heading font-bold rounded-xl"
-              onClick={handleSubmit}
-              disabled={!date || !time || loading}
-            >
-              {loading ? "جاري الحجز..." : "تأكيد الحجز"}
+              تأكيد الحجز
             </Button>
           </div>
         )}
@@ -343,14 +267,18 @@ const Reserve = () => {
             <div className="w-20 h-20 rounded-full gradient-primary flex items-center justify-center mx-auto mb-6">
               <Check className="h-10 w-10 text-foreground" />
             </div>
-            <h2 className="font-heading text-3xl font-bold mb-2">تم الحجز بنجاح!</h2>
+            <h2 className="font-heading text-3xl font-bold mb-2">
+              تم الحجز بنجاح!
+            </h2>
             <p className="text-muted-foreground mb-6">كود الحجز الخاص بك</p>
 
             <div className="glass rounded-2xl p-6 mb-8">
               <p className="text-4xl font-mono font-bold gradient-text tracking-widest">
                 {reservationCode}
               </p>
-              <p className="text-muted-foreground text-sm mt-2">احتفظ بهذا الكود</p>
+              <p className="text-muted-foreground text-sm mt-2">
+                احتفظ بهذا الكود
+              </p>
             </div>
 
             <div className="flex gap-3">

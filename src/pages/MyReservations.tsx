@@ -156,6 +156,7 @@ const MyReservations = () => {
         <div className="space-y-4">
           {reservations.map((r) => {
             const status = statusLabels[r.status] || statusLabels.waiting;
+            const isScheduled = r.reservation_time?.slice(0, 5) !== "00:00";
             return (
               <div key={r.id} className="glass rounded-2xl p-5 space-y-3">
                 <div className="flex items-center justify-between">
@@ -169,6 +170,12 @@ const MyReservations = () => {
 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
+                    <span className="text-muted-foreground text-xs">حالة الموعد</span>
+                    <p className="font-medium">
+                      {isScheduled ? "تم تأكيد الموعد" : "لم يتم تحديد الموعد بعد"}
+                    </p>
+                  </div>
+                  <div>
                     <span className="text-muted-foreground text-xs">الاسم</span>
                     <p className="font-medium">{r.customer_name}</p>
                   </div>
@@ -178,11 +185,15 @@ const MyReservations = () => {
                   </div>
                   <div>
                     <span className="text-muted-foreground text-xs">التاريخ</span>
-                    <p className="font-medium">{r.reservation_date}</p>
+                    <p className="font-medium">
+                      {isScheduled ? r.reservation_date : "—"}
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-xs">الوقت</span>
-                    <p className="font-medium">{r.reservation_time?.slice(0, 5)}</p>
+                    <p className="font-medium">
+                      {isScheduled ? r.reservation_time?.slice(0, 5) : "—"}
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground text-xs">نوع الطاولة</span>

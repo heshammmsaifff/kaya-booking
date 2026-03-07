@@ -8,6 +8,7 @@ import heroDefault from "@/assets/hero-default.jpg";
 const HeroSection = () => {
   const navigate = useNavigate();
   const [heroImage, setHeroImage] = useState<string>(heroDefault);
+  const [waitingCount, setWaitingCount] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchHeroImages = async () => {
@@ -24,7 +25,20 @@ const HeroSection = () => {
         }
       }
     };
+
+    const fetchWaitingCount = async () => {
+      const { count, error } = await supabase
+        .from("reservations")
+        .select("*", { count: "exact", head: true } as any)
+        .eq("status", "waiting");
+
+      if (!error) {
+        setWaitingCount(count ?? 0);
+      }
+    };
+
     fetchHeroImages();
+    fetchWaitingCount();
   }, []);
 
   return (
@@ -50,9 +64,19 @@ const HeroSection = () => {
           />
         </h1>
 
-        <p className="text-xl md:text-2xl text-muted-foreground font-heading mb-10">
+        <p className="text-xl md:text-2xl text-muted-foreground font-heading mb-6">
           تجربة طعام استثنائية
         </p>
+
+        {waitingCount !== null && (
+          <p className="text-sm md:text-base text-muted-foreground mb-6">
+            يوجد حاليًا{" "}
+            <span className="font-bold text-primary">
+              {waitingCount}
+            </span>{" "}
+            {waitingCount === 1 ? "عميل" : "عملاء"} في قائمة الانتظار
+          </p>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Button
