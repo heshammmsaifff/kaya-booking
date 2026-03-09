@@ -361,11 +361,7 @@ const Dashboard = () => {
     const mm = minuteNum.toString().padStart(2, "0");
     const time24 = `${hh}:${mm}`;
 
-    await setReservationSchedule(
-      scheduleReservation.id,
-      scheduleDate,
-      time24,
-    );
+    await setReservationSchedule(scheduleReservation.id, scheduleDate, time24);
 
     // إغلاق الـ Dialog وتصفير الحقول بعد النجاح
     setScheduleDialogOpen(false);
@@ -697,14 +693,16 @@ const Dashboard = () => {
                               مكتمل
                             </Button>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-lg font-heading text-destructive border-destructive/30 hover:bg-destructive/10"
-                            onClick={() => updateStatus(r, "cancelled")}
-                          >
-                            إلغاء
-                          </Button>
+                          {r.status === "waiting" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="rounded-lg font-heading text-destructive border-destructive/30 hover:bg-destructive/10"
+                              onClick={() => updateStatus(r, "cancelled")}
+                            >
+                              إلغاء
+                            </Button>
+                          )}
                         </div>
                       </div>
                     )}
