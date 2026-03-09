@@ -202,18 +202,63 @@ const Dashboard = () => {
   }, [fetchReservations]);
 
   const updateStatus = async (reservation: Reservation, status: string) => {
-    // منع نقل العميل إلى الخدمة قبل تحديد الموعد (تاريخ + وقت)
+    // حالة خاصة: حجز في الانتظار بدون موعد، نحدد الموعد تلقائيًا بلحظة بدء الخدمة
     if (
       status === "serving" &&
+      reservation.status === "waiting" &&
       (!reservation.reservation_time ||
         reservation.reservation_time.slice(0, 5) === "00:00")
     ) {
-      await Swal.fire({
-        icon: "error",
-        title: "لا يمكن بدء الخدمة",
-        text: "يجب أولاً تحديد التاريخ والوقت للحجز قبل نقل العميل إلى الخدمة.",
+      const now = new Date();
+      const dateStr = now.toISOString().slice(0, 10); // yyyy-MM-dd
+      const hh = now.getHours().toString().padStart(2, "0");
+      const mm = now.getMinutes().toString().padStart(2, "0");
+      const timeStr = `${hh}:${mm}:00`;
+
+      const result = await Swal.fire({
+        title: "تأكيد بدء الخدمة",
+        html: `
+          <div style="text-align: right; direction: rtl; font-family: 'Tajawal', sans-serif;">
+            <p style="margin-bottom: 8px;"><strong>العميل:</strong> ${reservation.customer_name}</p>
+            <p style="margin-bottom: 8px;"><strong>التاريخ:</strong> ${dateStr}</p>
+            <p style="margin-bottom: 8px;"><strong>الوقت:</strong> ${hh}:${mm}</p>
+            <p style="margin-top: 8px; font-size: 12px; color: #6c757d;">
+              سيتم حفظ هذا التاريخ والوقت كتاريخ ووقت الحجز.
+            </p>
+          </div>
+        `,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "بدء الخدمة بهذا الموعد",
+        cancelButtonText: "إلغاء",
         confirmButtonColor: "hsl(200, 46%, 39%)",
+        cancelButtonColor: "#6c757d",
+        reverseButtons: true,
       });
+
+      if (!result.isConfirmed) return;
+
+      const updates: any = {
+        status: "serving",
+        reservation_date: dateStr,
+        reservation_time: timeStr,
+      };
+
+      if (!reservation.service_started_at) {
+        updates.service_started_at = now.toISOString();
+      }
+
+      const { error } = await supabase
+        .from("reservations")
+        .update(updates)
+        .eq("id", reservation.id);
+
+      if (error) {
+        toast.error("حدث خطأ");
+      } else {
+        toast.success("تم بدء الخدمة وتحديث الموعد");
+        fetchReservations();
+      }
       return;
     }
 
@@ -627,56 +672,8 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    {/* Schedule setter / editor */}
-                    {r.status === "waiting" && (
-                      <div className="mb-4">
-                        <Label className="text-xs text-muted-foreground whitespace-nowrap block mb-1">
-                          {r.reservation_time?.slice(0, 5) === "00:00"
-                            ? "تحديد موعد الحجز"
-                            : "تعديل موعد الحجز"}
-                        </Label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-lg font-heading"
-                          onClick={() => {
-                            setScheduleReservation(r);
-
-                            // إذا كان لديه موعد سابق نملأ الحقول به، وإلا نبدأ من التاريخ الحالي
-                            if (
-                              r.reservation_time &&
-                              r.reservation_time.slice(0, 5) !== "00:00"
-                            ) {
-                              // تعبئة التاريخ
-                              setScheduleDate(new Date(r.reservation_date));
-
-                              // تعبئة الوقت (تحويل 24 ساعة إلى 12 + AM/PM)
-                              const [hhStr, mmStr] =
-                                r.reservation_time.slice(0, 5).split(":");
-                              const hhNum = parseInt(hhStr, 10);
-                              const isPM = hhNum >= 12;
-                              let hour12 = hhNum % 12;
-                              if (hour12 === 0) hour12 = 12;
-
-                              setScheduleHour(String(hour12));
-                              setScheduleMinute(mmStr);
-                              setSchedulePeriod(isPM ? "PM" : "AM");
-                            } else {
-                              setScheduleDate(new Date());
-                              setScheduleHour("");
-                              setScheduleMinute("");
-                              setSchedulePeriod("");
-                            }
-
-                            setScheduleDialogOpen(true);
-                          }}
-                        >
-                          {r.reservation_time?.slice(0, 5) === "00:00"
-                            ? "اختيار التاريخ والوقت"
-                            : "تعديل التاريخ والوقت"}
-                        </Button>
-                      </div>
-                    )}
+                    {/* لم يعد هناك تحديد/تعديل يدوي للموعد من شاشة الانتظار
+                        يتم الآن تحديد التاريخ والوقت تلقائيًا عند نقل الحجز إلى الخدمة */}
 
                     {(r.status === "waiting" || r.status === "serving") && (
                       <div className="border-t border-border/50 pt-3">
